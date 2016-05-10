@@ -422,6 +422,41 @@ void train_tournamentPredictor(uint32_t pc, uint8_t outcome) {
   printf("train_tournamentPredictor called---------\n");
   printf("PC: %x\n", pc);
   printf("Outcome: %d\n", outcome);
+
+  //train chooser
+  if(localDecision != globalDecision) {
+    if(localDecision == outcome) {
+      if(chooserPrediction < 3) { chooserT[ghr]++; }
+    }
+    else {
+      if(chooserPrediction > 0) { chooserT[ghr]--; }
+    }
+  }
+
+  //Update globalBHT
+  if(outcome == TAKEN) {
+    if(globalBHT[ghr] < 3) { globalBHT[ghr]++; }
+  }
+  else {
+    if(globalBHT[ghr] > 0) { globalBHT[ghr]--; }
+  }
+
+  //Update ghr
+  ghr = ghr<<1 | outcome;
+  ghr = ghr & ghrMask;
+
+  //Update local BHT
+  if(outcome == TAKEN) {
+    if(localBHT[localBHTIndex] < 3) { localBHT[localBHTIndex]++; }
+  }
+  else {
+    if(localBHT[localBHTIndex] > 0) { localBHT[localBHTIndex]--; }
+  }
+
+  //Update local PHT
+  localPHT[localPHTIndex] = localPHT[localPHTIndex]<<1 | outcome;
+  localPHT[localPHTIndex] = localPHT[localPHTIndex] & localPHTMask;
+
 }
 
 
