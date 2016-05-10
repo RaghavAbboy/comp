@@ -67,4 +67,18 @@ uint8_t make_prediction(uint32_t pc);
 //
 void train_predictor(uint32_t pc, uint8_t outcome);
 
+//Individual Predictor functions
+
+//****************************************
+//Local Predictor
+void init_localPredictor();
+
+
+
+//------------------------------------//
+//          Helper Functions          //
+//------------------------------------//
+int power(int,int);
+
+
 #endif
