@@ -332,10 +332,10 @@ void train_gsharePredictor(uint32_t pc, uint8_t outcome) {
 //****************************************
 //tournament Predictor
 void init_tournamentPredictor() {
-  printf("init_tournamentPredictor called---------\n");
-  printf("ghistoryBits: %d\n", ghistoryBits);
-  printf("lhistoryBits: %d\n", lhistoryBits);
-  printf("pcIndexBits: %d\n", pcIndexBits);
+  // printf("init_tournamentPredictor called---------\n");
+  // printf("ghistoryBits: %d\n", ghistoryBits);
+  // printf("lhistoryBits: %d\n", lhistoryBits);
+  // printf("pcIndexBits: %d\n", pcIndexBits);
 
   pcMask = power(2, pcIndexBits) - 1;
 
@@ -349,9 +349,9 @@ void init_tournamentPredictor() {
   localPHTSize = power(2,pcIndexBits);
   localPHT = malloc(sizeof(uint32_t) * localPHTSize);
 
-  printf("\nlocalPHTMask: %x\n", localPHTMask);
-  printf("ghrMask: %x\n", ghrMask);
-  printf("pcMask: %x\n", pcMask);
+  // printf("\nlocalPHTMask: %x\n", localPHTMask);
+  // printf("ghrMask: %x\n", ghrMask);
+  // printf("pcMask: %x\n", pcMask);
 
 
   //Initialize localPHT table with NT
@@ -361,8 +361,8 @@ void init_tournamentPredictor() {
   localBHTSize = power(2, lhistoryBits);
   localBHT = malloc(sizeof(uint32_t) * localBHTSize);
 
-  printf("localPHTSize: %d\n", localPHTSize);
-  printf("localBHTSize: %d\n", localBHTSize);
+  // printf("localPHTSize: %d\n", localPHTSize);
+  // printf("localBHTSize: %d\n", localBHTSize);
 
   //Initialize localBHT with WNT (1)
   for(i=0; i<localBHTSize; i++) { localBHT[i] = 1; }
@@ -388,14 +388,14 @@ void init_tournamentPredictor() {
   */
   for(i=0; i<chooserTSize; i++) { chooserT[i] = 1; }
 
-  printf("globalBHTSize: %d\n", globalBHTSize);
-  printf("chooserTSize: %d\n", chooserTSize);
+  // printf("globalBHTSize: %d\n", globalBHTSize);
+  // printf("chooserTSize: %d\n", chooserTSize);
 
 }
 
 uint8_t tournamentPredictor(uint32_t pc) {
-  printf("tournamentPredictor called---------\n");
-  printf("PC: %x\n", pc);
+  // printf("tournamentPredictor called---------\n");
+  // printf("PC: %x\n", pc);
 
   //Fetch local prediction, decision
   localPHTIndex = pc & pcMask;
@@ -411,17 +411,17 @@ uint8_t tournamentPredictor(uint32_t pc) {
   chooserPrediction = chooserT[ghr];
   chooserDecision = (chooserPrediction >= 2) ? localDecision : globalDecision;
 
-  printf("localPrediction: %d\n", localPrediction);
-  printf("globalPrediction: %d\n", globalPrediction);
-  printf("chooserPrediction: %d\n", chooserPrediction);
+  // printf("localPrediction: %d\n", localPrediction);
+  // printf("globalPrediction: %d\n", globalPrediction);
+  // printf("chooserPrediction: %d\n", chooserPrediction);
 
   return chooserDecision;
 }
 
 void train_tournamentPredictor(uint32_t pc, uint8_t outcome) {
-  printf("train_tournamentPredictor called---------\n");
-  printf("PC: %x\n", pc);
-  printf("Outcome: %d\n", outcome);
+  // printf("train_tournamentPredictor called---------\n");
+  // printf("PC: %x\n", pc);
+  // printf("Outcome: %d\n", outcome);
 
   //train chooser
   if(localDecision != globalDecision) {
