@@ -90,9 +90,17 @@ uint32_t localPHTMask;
 
 //Helper variables
 // uint32_t pcMask;
+uint32_t localPHTIndex;
+uint32_t localBHTIndex;
 
+uint32_t localPrediction;
+int localDecision;
 
+uint32_t globalPrediction;
+int globalDecision;
 
+uint32_t chooserPrediction;
+int chooserDecision;
 
 
 //------------------------------------//
@@ -389,7 +397,25 @@ uint8_t tournamentPredictor(uint32_t pc) {
   printf("tournamentPredictor called---------\n");
   printf("PC: %x\n", pc);
 
-  return NOTTAKEN;
+  //Fetch local prediction, decision
+  localPHTIndex = pc & pcMask;
+  localBHTIndex = localPHT[localPHTIndex];
+  localPrediction = localBHT[localBHTIndex];
+  localDecision = (localPrediction >= 2) ? TAKEN : NOTTAKEN;
+
+  //Fetch global prediction, decision
+  globalPrediction = globalBHT[ghr];
+  globalDecision = (globalPrediction >= 2) ? TAKEN : NOTTAKEN;
+
+  //Fetch chooserPrediction, decision
+  chooserPrediction = chooserT[ghr];
+  chooserDecision = (chooserPrediction >= 2) ? localDecision : globalDecision;
+
+  printf("localPrediction: %d\n", localPrediction);
+  printf("globalPrediction: %d\n", globalPrediction);
+  printf("chooserPrediction: %d\n", chooserPrediction);
+
+  return chooserDecision;
 }
 
 void train_tournamentPredictor(uint32_t pc, uint8_t outcome) {
