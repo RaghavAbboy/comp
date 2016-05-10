@@ -81,6 +81,11 @@ void init_gsharePredictor();
 uint8_t gsharePredictor(uint32_t);
 void train_gsharePredictor(uint32_t, uint8_t);
 
+//****************************************
+//tournament Predictor
+void init_tournamentPredictor();
+uint8_t tournamentPredictor(uint32_t);
+void train_tournamentPredictor(uint32_t, uint8_t);
 
 //------------------------------------//
 //          Helper Functions          //

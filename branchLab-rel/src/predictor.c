@@ -60,12 +60,38 @@ uint32_t ghrMask;  //power(2,ghistoryBits) - 1
 uint32_t pcMask;   //ghrMask
 uint32_t maskedPC;
 
-//already defined above, commented for reference
+// Already defined above, commented for reference
 // uint32_t *bht
 // int bhtSize
 
 // uint32_t bhtIndex;
 // uint32_t bhtValue;
+
+//****************************************
+//tournament Predictor
+
+//Global history variables
+// uint32_t ghr;
+// uint32_t ghrMask;
+
+uint32_t *globalBHT;
+int globalBHTSize;
+
+//Chooser Table variables
+uint32_t *chooserT;
+int chooserTSize;
+
+//Local History variables
+uint32_t *localPHT;
+int localPHTSize;
+uint32_t *localBHT;
+int localBHTSize;
+uint32_t localPHTMask;
+
+//Helper variables
+// uint32_t pcMask;
+
+
 
 
 
@@ -88,6 +114,7 @@ void init_predictor()
       init_localPredictor();
       break;
     case TOURNAMENT:
+      init_tournamentPredictor();
       return;
     case CUSTOM:
       return;
@@ -102,9 +129,6 @@ void init_predictor()
 //
 uint8_t make_prediction(uint32_t pc)
 {
-  //
-  //TODO: Implement prediction scheme
-  //
 
   // Make a prediction based on the bpType
   switch (bpType) {
@@ -115,6 +139,7 @@ uint8_t make_prediction(uint32_t pc)
     case LOCAL:
       return localPredictor(pc);
     case TOURNAMENT:
+      return tournamentPredictor(pc);
     case CUSTOM:
     default:
       break;
@@ -140,6 +165,7 @@ void train_predictor(uint32_t pc, uint8_t outcome)
       train_localPredictor(pc, outcome);
       return;
     case TOURNAMENT:
+      train_tournamentPredictor(pc, outcome);
       return;
     case CUSTOM:
       return;
@@ -295,13 +321,82 @@ void train_gsharePredictor(uint32_t pc, uint8_t outcome) {
 };
 
 
+//****************************************
+//tournament Predictor
+void init_tournamentPredictor() {
+  printf("init_tournamentPredictor called---------\n");
+  printf("ghistoryBits: %d\n", ghistoryBits);
+  printf("lhistoryBits: %d\n", lhistoryBits);
+  printf("pcIndexBits: %d\n", pcIndexBits);
+
+  pcMask = power(2, pcIndexBits) - 1;
+
+  //Initialize ghr to NT
+  ghr = 0;
+  ghrMask = power(2,ghistoryBits) - 1;
+
+  //Create local PHT
+  localPHTMask = power(2,lhistoryBits) - 1;
+
+  localPHTSize = power(2,pcIndexBits);
+  localPHT = malloc(sizeof(uint32_t) * localPHTSize);
+
+  printf("\nlocalPHTMask: %x\n", localPHTMask);
+  printf("ghrMask: %x\n", ghrMask);
+  printf("pcMask: %x\n", pcMask);
 
 
+  //Initialize localPHT table with NT
+  for(i=0; i<localPHTSize; i++) { localPHT[i] = 0; }
+
+  //Create local BHT
+  localBHTSize = power(2, lhistoryBits);
+  localBHT = malloc(sizeof(uint32_t) * localBHTSize);
+
+  printf("localPHTSize: %d\n", localPHTSize);
+  printf("localBHTSize: %d\n", localBHTSize);
+
+  //Initialize localBHT with WNT (1)
+  for(i=0; i<localBHTSize; i++) { localBHT[i] = 1; }
+
+  //Create global BHT
+  globalBHTSize = power(2, ghistoryBits);
+  globalBHT = malloc(sizeof(uint32_t) * globalBHTSize);
+
+  //Initialize global BHT with WNT (1)
+  for(i=0; i<globalBHTSize; i++) { globalBHT[i] = 1; }
+
+  //Create chooserT
+  chooserTSize = power(2, ghistoryBits);
+  chooserT = malloc(sizeof(uint32_t) * chooserTSize);
 
 
+  //Initialize chooserT with weakly global (WG)
+  /*
+    3 - 11 - Strongly Local (SL)
+    2 - 10 - Weakly Local (WL)
+    1 - 01 - Weakly Global (WG)
+    0 - 00 - Strongly Global (SG)
+  */
+  for(i=0; i<chooserTSize; i++) { chooserT[i] = 1; }
 
+  printf("globalBHTSize: %d\n", globalBHTSize);
+  printf("chooserTSize: %d\n", chooserTSize);
 
+}
 
+uint8_t tournamentPredictor(uint32_t pc) {
+  printf("tournamentPredictor called---------\n");
+  printf("PC: %x\n", pc);
+
+  return NOTTAKEN;
+}
+
+void train_tournamentPredictor(uint32_t pc, uint8_t outcome) {
+  printf("train_tournamentPredictor called---------\n");
+  printf("PC: %x\n", pc);
+  printf("Outcome: %d\n", outcome);
+}
 
 
 
