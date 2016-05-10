@@ -36,6 +36,9 @@ int bpType;       // Branch Prediction Type
 //TODO: Add your own Branch Predictor data structures here
 //
 
+//Miscellaneous Variables
+int i;
+
 //****************************************
 //Local Predictor
 int phtSize;
@@ -48,6 +51,22 @@ uint32_t phtIndex;
 uint32_t phtValue;
 uint32_t bhtIndex;
 uint32_t bhtValue;
+
+//****************************************
+//gshare Predictor
+uint32_t ghr;
+uint32_t ghrMask;  //power(2,ghistoryBits) - 1
+
+uint32_t pcMask;   //ghrMask
+uint32_t maskedPC;
+
+//already defined above, commented for reference
+// uint32_t *bht
+// int bhtSize
+
+// uint32_t bhtIndex;
+// uint32_t bhtValue;
+
 
 
 //------------------------------------//
@@ -63,7 +82,8 @@ void init_predictor()
     case STATIC:
       return;
     case GSHARE:
-      return;
+      init_gsharePredictor();
+      break;
     case LOCAL:
       init_localPredictor();
       break;
@@ -91,6 +111,7 @@ uint8_t make_prediction(uint32_t pc)
     case STATIC:
       return TAKEN;
     case GSHARE:
+      return gsharePredictor(pc);
     case LOCAL:
       return localPredictor(pc);
     case TOURNAMENT:
@@ -113,6 +134,7 @@ void train_predictor(uint32_t pc, uint8_t outcome)
     case STATIC:
       return;
     case GSHARE:
+      train_gsharePredictor(pc, outcome);
       return;
     case LOCAL:
       train_localPredictor(pc, outcome);
@@ -145,9 +167,9 @@ int power(int x, int n) {
 
 void init_localPredictor() {
   //remove
-  printf("init_localPredictor called---------\n");
-  printf("lHistoryBits: %d\n", lhistoryBits);
-  printf("pcIndexBits: %d\n", pcIndexBits);
+  // printf("init_localPredictor called---------\n");
+  // printf("lHistoryBits: %d\n", lhistoryBits);
+  // printf("pcIndexBits: %d\n", pcIndexBits);
 
   //Initialize pht and bht
   phtSize = power(2,pcIndexBits);
@@ -156,65 +178,121 @@ void init_localPredictor() {
   bhtSize = power(2,lhistoryBits);
   bht = malloc(sizeof(uint32_t) * bhtSize);
 
-  printf("phtSize: %d \n", phtSize);
-  printf("bhtSize: %d \n\n", bhtSize);
+  // printf("phtSize: %d \n", phtSize);
+  // printf("bhtSize: %d \n\n", bhtSize);
 
   //Initialize all patterns to NT
-  int i; for(i=0; i<phtSize; i++) { pht[i] = 0; }
+  for(i=0; i<phtSize; i++) { pht[i] = 0; }
   //Initilialize all predictors to weakly not taken
   for(i=0; i<bhtSize; i++) { bht[i] = 1; }
 }
 
 
 uint8_t localPredictor(uint32_t pc) {
-  printf("localPredictor called---------\n");
-  printf("PC: %x\n", pc);
+  // printf("localPredictor called---------\n");
+  // printf("PC: %x\n", pc);
 
   //Make a mask
   mask = power(2,pcIndexBits) - 1;
-  printf("Mask: %x\n", mask);
+  // printf("Mask: %x\n", mask);
 
   phtIndex = pc & mask;
   phtValue = pht[phtIndex];
 
-  printf("pht Index: %x\n", phtIndex);
-  printf("pht Value: %x\n", phtValue);
+  // printf("pht Index: %x\n", phtIndex);
+  // printf("pht Value: %x\n", phtValue);
 
   bhtIndex = phtValue;
   bhtValue = bht[bhtIndex];
 
-  printf("bht Index: %x\n", bhtIndex);
-  printf("bht Value: %x\n", bhtValue);
+  // printf("bht Index: %x\n", bhtIndex);
+  // printf("bht Value: %x\n", bhtValue);
 
   //Decision
   int decision = (bhtValue >=2) ? TAKEN:NOTTAKEN;
-  printf("Decision: %d\n", decision);
+  // printf("Decision: %d\n", decision);
 
   return decision;
 }
 
 
 void train_localPredictor(uint32_t pc, uint8_t outcome) {
-  printf("train_localPredictor called---------\n");
-  printf("PC: %x\n", pc);
-  printf("Outcome: %d\n", outcome);
+//   printf("train_localPredictor called---------\n");
+//   printf("PC: %x\n", pc);
+//   printf("Outcome: %d\n", outcome);
 
   if(outcome) { if(bhtValue < 3) { bht[bhtIndex]++; } }
   else { if(bhtValue > 0) { bht[bhtIndex]--; } }
 
-  printf("New bht value: %x\n", bht[bhtIndex]);
+  // printf("New bht value: %x\n", bht[bhtIndex]);
 
   //New pattern
   pht[phtIndex] = pht[phtIndex] << 1 | outcome;
   pht[phtIndex] = phtIndex & (power(2,lhistoryBits)-1);
-  printf("New pht value: %x\n", pht[phtIndex]);
-  printf("Corresponding bht value: %d\n", bht[pht[phtIndex]]);
+  // printf("New pht value: %x\n", pht[phtIndex]);
+  // printf("Corresponding bht value: %d\n", bht[pht[phtIndex]]);
 }
 
 
 
+//****************************************
+//gshare Predictor
+void init_gsharePredictor() {
+  // printf("init_gsharePredictor called---------\n");
+  // printf("ghistoryBits: %d\n", ghistoryBits);
+
+  //Initialize ghr to NT
+  ghr = 0;
+  ghrMask = power(2,ghistoryBits) - 1;
+  pcMask = ghrMask;
+
+  // printf("GHR and PC mask: %x\n", ghrMask);
+
+  //Create a BHT
+  bhtSize = power(2, ghistoryBits);
+  bht = malloc(sizeof(uint32_t) * bhtSize);
+  // printf("bhtSize: %d\n", bhtSize);
+
+  //Initilialize all predictors to weakly not taken
+  for(i=0; i<bhtSize; i++) { bht[i] = 1; }
+};
+
+uint8_t gsharePredictor(uint32_t pc) {
+  // printf("gsharePredictor called---------\n");
+  // printf("PC: %x\n", pc);
+
+  maskedPC = pc & pcMask;
+  // printf("Masked PC: %x\n", maskedPC);
+  // printf("GHR: %x\n", ghr);
+
+  bhtIndex = maskedPC ^ ghr;
+  // printf("bhtIndex: %x\n", bhtIndex);
+
+  bhtValue = bht[bhtIndex];
+  // printf("bhtValue: %x\n", bhtValue);
+
+  //Decision
+  int decision = (bhtValue >=2) ? TAKEN:NOTTAKEN;
+  // printf("Decision: %d\n", decision);
+
+  return decision;
+}
 
 
+void train_gsharePredictor(uint32_t pc, uint8_t outcome) {
+  // printf("train_gsharePredictor called---------\n");
+  // printf("PC: %x\n", pc);
+  // printf("Outcome: %d\n", outcome);
+
+  if(outcome) { if(bhtValue < 3) { bht[bhtIndex]++; } }
+  else { if(bhtValue > 0) { bht[bhtIndex]--; } }
+
+  // printf("New bht value: %x\n", bht[bhtIndex]);
+
+  //Update lhr and mask it
+  ghr = ghr << 1 | outcome;
+  ghr = ghr & ghrMask;
+};
 
 
 

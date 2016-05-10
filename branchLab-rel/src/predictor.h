@@ -75,6 +75,12 @@ void init_localPredictor();
 uint8_t localPredictor(uint32_t);
 void train_localPredictor(uint32_t, uint8_t);
 
+//****************************************
+//gshare Predictor
+void init_gsharePredictor();
+uint8_t gsharePredictor(uint32_t);
+void train_gsharePredictor(uint32_t, uint8_t);
+
 
 //------------------------------------//
 //          Helper Functions          //
