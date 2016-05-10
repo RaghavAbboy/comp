@@ -72,7 +72,8 @@ void train_predictor(uint32_t pc, uint8_t outcome);
 //****************************************
 //Local Predictor
 void init_localPredictor();
-
+uint8_t localPredictor(uint32_t);
+void train_localPredictor(uint32_t, uint8_t);
 
 
 //------------------------------------//

@@ -5,7 +5,7 @@
 //  Implement the various branch predictors below as      //
 //  described in the README                               //
 //========================================================//
-
+#include <stdio.h>
 #include "predictor.h"
 
 //
@@ -42,6 +42,12 @@ int phtSize;
 int bhtSize;
 uint32_t *pht;
 uint32_t *bht;
+
+uint32_t mask;
+uint32_t phtIndex;
+uint32_t phtValue;
+uint32_t bhtIndex;
+uint32_t bhtValue;
 
 
 //------------------------------------//
@@ -86,6 +92,7 @@ uint8_t make_prediction(uint32_t pc)
       return TAKEN;
     case GSHARE:
     case LOCAL:
+      return localPredictor(pc);
     case TOURNAMENT:
     case CUSTOM:
     default:
@@ -102,9 +109,21 @@ uint8_t make_prediction(uint32_t pc)
 //
 void train_predictor(uint32_t pc, uint8_t outcome)
 {
-  //
-  //TODO: Implement Predictor training
-  //
+  switch (bpType) {
+    case STATIC:
+      return;
+    case GSHARE:
+      return;
+    case LOCAL:
+      train_localPredictor(pc, outcome);
+      return;
+    case TOURNAMENT:
+      return;
+    case CUSTOM:
+      return;
+    default:
+      break;
+  }
 }
 
 //------------------------------------//
@@ -120,8 +139,95 @@ int power(int x, int n) {
 //------------------------------------//
 //   Individual Predictor Functions   //
 //------------------------------------//
+
+//****************************************
+//Local Predictor
+
 void init_localPredictor() {
-  printf("init_localPredictor called.\n");
-};
+  //remove
+  printf("init_localPredictor called---------\n");
+  printf("lHistoryBits: %d\n", lhistoryBits);
+  printf("pcIndexBits: %d\n", pcIndexBits);
+
+  //Initialize pht and bht
+  phtSize = power(2,pcIndexBits);
+  pht = malloc(sizeof(uint32_t) * phtSize);
+
+  bhtSize = power(2,lhistoryBits);
+  bht = malloc(sizeof(uint32_t) * bhtSize);
+
+  printf("phtSize: %d \n", phtSize);
+  printf("bhtSize: %d \n\n", bhtSize);
+
+  //Initialize all patterns to NT
+  int i; for(i=0; i<phtSize; i++) { pht[i] = 0; }
+  //Initilialize all predictors to weakly not taken
+  for(i=0; i<bhtSize; i++) { bht[i] = 1; }
+}
+
+
+uint8_t localPredictor(uint32_t pc) {
+  printf("localPredictor called---------\n");
+  printf("PC: %x\n", pc);
+
+  //Make a mask
+  mask = power(2,pcIndexBits) - 1;
+  printf("Mask: %x\n", mask);
+
+  phtIndex = pc & mask;
+  phtValue = pht[phtIndex];
+
+  printf("pht Index: %x\n", phtIndex);
+  printf("pht Value: %x\n", phtValue);
+
+  bhtIndex = phtValue;
+  bhtValue = bht[bhtIndex];
+
+  printf("bht Index: %x\n", bhtIndex);
+  printf("bht Value: %x\n", bhtValue);
+
+  //Decision
+  int decision = (bhtValue >=2) ? TAKEN:NOTTAKEN;
+  printf("Decision: %d\n", decision);
+
+  return decision;
+}
+
+
+void train_localPredictor(uint32_t pc, uint8_t outcome) {
+  printf("train_localPredictor called---------\n");
+  printf("PC: %x\n", pc);
+  printf("Outcome: %d\n", outcome);
+
+  if(outcome) { if(bhtValue < 3) { bht[bhtIndex]++; } }
+  else { if(bhtValue > 0) { bht[bhtIndex]--; } }
+
+  printf("New bht value: %x\n", bht[bhtIndex]);
+
+  //New pattern
+  pht[phtIndex] = pht[phtIndex] << 1 | outcome;
+  pht[phtIndex] = phtIndex & (power(2,lhistoryBits)-1);
+  printf("New pht value: %x\n", pht[phtIndex]);
+  printf("Corresponding bht value: %d\n", bht[pht[phtIndex]]);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
