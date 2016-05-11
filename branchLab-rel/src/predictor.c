@@ -102,6 +102,27 @@ int globalDecision;
 uint32_t chooserPrediction;
 int chooserDecision;
 
+//****************************************
+//custom Predictor
+// uint32_t ghr;
+const int k = 5;
+
+const int h = 10; //gHistoryBits for custom predictor
+
+uint8_t ga[10];  //Global address register ga[h]
+int theta = 44; //2.14*(h+1) + 20.58;
+
+//weights array
+int Wdimension = 32; //2^5
+int W[32][32][10];  //[Wdimension][Wdimension][h]
+
+uint8_t address;
+
+uint32_t mask32;
+uint8_t mask8;
+
+int customDecision = 0;
+uint8_t predict = 0;
 
 //------------------------------------//
 //        Predictor Functions         //
@@ -123,9 +144,10 @@ void init_predictor()
       break;
     case TOURNAMENT:
       init_tournamentPredictor();
-      return;
+      break;
     case CUSTOM:
-      return;
+      init_customPredictor();
+      break;
     default:
       break;
   }
@@ -149,6 +171,7 @@ uint8_t make_prediction(uint32_t pc)
     case TOURNAMENT:
       return tournamentPredictor(pc);
     case CUSTOM:
+      return customPredictor(pc);
     default:
       break;
   }
@@ -176,6 +199,7 @@ void train_predictor(uint32_t pc, uint8_t outcome)
       train_tournamentPredictor(pc, outcome);
       return;
     case CUSTOM:
+      train_customPredictor(pc, outcome);
       return;
     default:
       break;
@@ -458,6 +482,116 @@ void train_tournamentPredictor(uint32_t pc, uint8_t outcome) {
   localPHT[localPHTIndex] = localPHT[localPHTIndex] & localPHTMask;
 
 }
+
+
+//****************************************
+//custom Predictor - Piecewise linear predictor
+void init_customPredictor() {
+  // printf("init_customPredictor called---------\n");
+
+  // printf("h - ghrLength: %d\n", h);
+  // printf("k - number of address bits: %d\n", k);
+
+  //Initialize all ga[i] to 0
+  for(i=0; i<h; i++) { ga[i]=0; }
+
+  //Initialize ghr to NT
+  ghr = 0;
+
+  //Initialize all W[][][] to 0
+  int j,k;
+
+  for(i=0; i<Wdimension; i++)
+    for(j=0; j<Wdimension; j++)
+      for(k=0; k<h; k++)
+        { W[i][j][k] = 0; }
+
+  //Initialize masks
+  k=5;
+  mask8 = power(2,k) - 1;
+  mask32 = power(2,k) - 1;
+}
+
+uint8_t customPredictor(uint32_t pc) {
+  // printf("customPredictor called---------\n");
+  // printf("PC: %x Mask:%x\n", pc, mask32);
+
+  address = pc & mask32;  //8 bit address
+  // printf("Address: %x\n", address);
+
+  customDecision = W[address][0][0];
+
+  for(i=0; i<h; i++) {
+    uint32_t ghr_i = ghr>>i & 0x00000001;
+
+    if(ghr_i) {
+      customDecision = customDecision + W[address][ga[i]][i];
+    }
+    else {
+      customDecision = customDecision - W[address][ga[i]][i];
+    }
+  }
+
+  // printf("\nDecision: %d\n", customDecision);
+  predict = customDecision >= 0;
+  return predict;
+}
+
+void train_customPredictor(uint32_t pc, uint8_t outcome) {
+  // printf("train_customPredictor called---------\n");
+  // printf("PC: %x\n", pc);
+  // printf("Predict: %d\n", predict);
+  // printf("Decision: %d\n", customDecision);
+  // printf("Outcome: %d\n", outcome);
+  // printf("Theta: %d\n\n", theta);
+
+  int abs_customDecision = (customDecision>=0)? customDecision:-customDecision;
+  // printf("abs(Decision): %d\n", abs_customDecision);
+
+  if(abs_customDecision < theta || predict != outcome) {
+    if(outcome == 1) { if(W[address][0][0] < 127) W[address][0][0] += 1; }
+    else { if(W[address][0][0] > -128) W[address][0][0] -= 1; }
+
+    for(i=0; i<h; i++) {
+      uint32_t ghr_i = ghr>>i & 0x00000001;
+      if(ghr_i == outcome) { if(W[address][0][0] < 127) W[address][ga[i]][i] += 1; }
+      else { if(W[address][0][0] > -128) W[address][ga[i]][i] -= 1; }
+    }
+  }
+
+  //Shift in the new address into ga[]
+  uint8_t newaddress = pc & mask32;
+
+  for(i=h-1; i>0; i--) { ga[i] = ga[i-1]; }
+  ga[0] = newaddress;
+
+  //Update ghr
+  // printf("ghr before update: %x\n", ghr);
+  ghr = ghr<<1 | outcome;
+  ghr = ghr & mask32;
+  // printf("ghr after update: %x\n", ghr);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

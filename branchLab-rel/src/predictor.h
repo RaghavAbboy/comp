@@ -87,6 +87,12 @@ void init_tournamentPredictor();
 uint8_t tournamentPredictor(uint32_t);
 void train_tournamentPredictor(uint32_t, uint8_t);
 
+//****************************************
+//custom Predictor
+void init_customPredictor();
+uint8_t customPredictor(uint32_t);
+void train_customPredictor(uint32_t, uint8_t);
+
 //------------------------------------//
 //          Helper Functions          //
 //------------------------------------//
